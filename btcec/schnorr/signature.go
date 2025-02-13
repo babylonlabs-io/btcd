@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/common"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	ecdsa_schnorr "github.com/decred/dcrd/dcrec/secp256k1/v4/schnorr"
@@ -284,10 +285,12 @@ func schnorrSign(privKey, nonce *btcec.ModNScalar, pubKey *btcec.PublicKey, hash
 	//
 	// Step 10.
 	//
-	// R = kG
-	var R btcec.JacobianPoint
+	// R = kG (with blinding in order to prevent timing side channel attacks)
 	k := *nonce
-	btcec.ScalarBaseMultNonConst(&k, &R)
+	R, err := common.ScalarBaseMultWithBlinding(&k)
+	if err != nil {
+		return nil, err
+	}
 
 	// Step 11.
 	//
